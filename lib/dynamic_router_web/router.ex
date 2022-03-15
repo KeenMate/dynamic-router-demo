@@ -21,8 +21,15 @@ defmodule DynamicRouterWeb.Router do
     plug :accepts, ["json"]
   end
 
+  scope "/", DynamicRouterWeb do
+    pipe_through :browser
+    # you need this entry to support the default root without a locale, it will never be called
+    get "/", PageController, :dummy
+  end
+
   scope "/:locale", DynamicRouterWeb do
     pipe_through :browser
+    get "/", PageController, :index
 
     get "/*path", DynamicController, :handle
   end

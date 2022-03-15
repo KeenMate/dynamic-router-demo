@@ -9,14 +9,18 @@ defmodule DynamicRouterWeb.DynamicController do
   end
 
   def map_controller("en", "news"), do: {DynamicRouterWeb.NewsController, :handle}
-  def map_controller("cz", "novinky"), do: {DynamicRouterWeb.NewsController, :handle}
-  def map_controller("cz", "o-nas"), do: {DynamicRouterWeb.StaticController, :about_us}
-  def map_controller("en", "about-us"), do: {DynamicRouterWeb.StaticController, :about_us}
+  def map_controller("cs", "novinky"), do: {DynamicRouterWeb.NewsController, :handle}
+  def map_controller("cs", "o-nas"), do: {DynamicRouterWeb.StaticController, :about_us}
+  def map_controller("en", "about-us"), do: {DynamicRouterWeb.StaticController, :handle}
   def map_controller(_, _), do: nil
 end
 
 defmodule DynamicRouterWeb.NewsController do
   use DynamicRouterWeb, :controller
+
+  def handle(conn, %{"locale" => locale, "path" => [_ | []]} = _) do
+    send_resp(conn, 200, "News list for locale: #{locale}")
+  end
 
   def handle(conn, %{"locale" => locale, "path" => [_ | path]} = params) do
     category_path = Enum.join(path, "/") |> IO.inspect(label: "Category")
@@ -38,8 +42,8 @@ defmodule DynamicRouterWeb.NewsController do
 
   def is_category("en", "cars"), do: true
   def is_category("en", "cars/audi"), do: true
-  def is_category("cz", "auta"), do: true
-  def is_category("cz", "auta/audi"), do: true
+  def is_category("cs", "auta"), do: true
+  def is_category("cs", "auta/audi"), do: true
   def is_category(_, _), do: nil
 
   def is_article(locale, path) do
@@ -70,5 +74,22 @@ defmodule DynamicRouterWeb.NewsController do
       {id, ""} -> id
       _ -> nil
     end
+  end
+end
+
+defmodule DynamicRouterWeb.StaticController do
+  use DynamicRouterWeb, :controller
+
+  def handle(conn, %{"locale" => locale, "path" => [path]}) do
+    IO.inspect(path)
+
+    get_static_content(locale, path)
+
+    send_resp(conn, 200, "Static content: #{locale}")
+  end
+
+  def get_static_content(locale, path) do
+    IO.inspect(locale: locale, path: path)
+
   end
 end
