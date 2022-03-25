@@ -1,5 +1,14 @@
 import Config
 
+# Configure your database
+config :dynamic_router, DynamicRouter.Repo,
+  username: "dynamic_router_dev",
+  password: "Dynamic",
+  hostname: "localhost",
+  database: "dynamic_router_dev",
+  show_sensitive_data_on_connection_error: true,
+  pool_size: 10
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
@@ -60,3 +69,42 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+config :ecto_gen,
+  otp_app: :dynamic_router,
+  db_config: DynamicRouter.Repo,
+  # relative path should be relative to the project root
+  output_location: "lib/dynamic_router/database",
+  # Module prefix that will be used for generated content
+  output_module: "DynamicRouter.Database",
+
+  # This way, you can provide custom template for individual parts of generation
+  # default files are in /priv/templates directory of this package
+  # template_overrides: [
+  #   db_module: "/path/to/db_module.ex.eex",
+  #   routine: "/path/to/db_routine.ex.eex",
+  #   routine_result: "/path/to/db_routine_result.ex.eex",
+  #   routine_parser: "/path/to/db_routine_parser.ex.eex"
+  # ],
+
+  # This config holds information about what routines (funcs) from database will have generated elixir functions etc.
+  # db project has keys, each representing database's schema which has config for what routines it includes/ingores
+  db_project: [
+    const: [
+      funcs: "*",
+      # makes sense to specify ignored functions (routines) only when funcs equal "*"
+      ignored_funcs: []
+    ],
+    internal: [
+      funcs: "*",
+      # makes sense to specify ignored functions (routines) only when funcs equal "*"
+      ignored_funcs: []
+    ],
+    public: [
+      # or ["func_name_1", "func_name_2"]
+      funcs: "*",
+
+      # makes sense to specify ignored functions (routines) only when funcs equal "*"
+      ignored_funcs: []
+    ]
+  ]

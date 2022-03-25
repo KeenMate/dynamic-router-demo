@@ -29,6 +29,7 @@ defmodule DynamicRouterWeb.Router do
 
   scope "/:locale", DynamicRouterWeb do
     pipe_through :browser
+    
     get "/", PageController, :index
 
     get "/*path", DynamicController, :handle
