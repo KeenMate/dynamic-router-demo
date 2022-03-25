@@ -7,6 +7,9 @@
 # General application configuration
 import Config
 
+config :dynamic_router,
+  ecto_repos: [DynamicRouter.Repo]
+
 # Configures the endpoint
 config :dynamic_router, DynamicRouterWeb.Endpoint,
   url: [host: "localhost"],
