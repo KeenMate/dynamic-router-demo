@@ -1,8 +1,8 @@
 defmodule DynamicRouterWeb.NewsController do
   use DynamicRouterWeb, :controller
 
-  def handle(conn, %{"locale" => locale, "path" => [_ | []]} = _) do
-    send_resp(conn, 200, "News list for locale: #{locale}")
+  def handle(conn, %{"path" => [_ | []]} = _) do
+    send_resp(conn, 200, "News list")
   end
 
   def handle(conn, %{"locale" => locale, "path" => [_ | path]} = params) do

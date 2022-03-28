@@ -5,11 +5,16 @@ defmodule DynamicRouterWeb.LanguagePlug do
   import DynamicRouter.Database.DbContext
 
   def init(opts) do
+    IO.puts("Lang plug init")
     opts
   end
 
   def call(%{params: %{"locale" => code}} = conn, _opts) do
-    {:ok, language_id} = get_language_id(code)
+    IO.puts("Language plug called")
+
+    IO.inspect(code, label: "Locale code")
+
+    {:ok, language_id} = get_language_id(code) |> IO.inspect(label: "Language ID")
 
     conn
     |> put_private(:pluto__language_id, language_id)

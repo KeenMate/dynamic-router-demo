@@ -13,12 +13,16 @@ defmodule DynamicRouterWeb.Router do
       gettext: DynamicRouterWeb.Gettext,
       default_locale: "en",
       cookie_key: "dynamic_router_locale",
-      additional_locales: ["cz"]
+      additional_locales: ["cs", "fr", "de"]
     )
   end
 
   pipeline :api do
     plug :accepts, ["json"]
+  end
+
+  pipeline :language do
+    plug DynamicRouterWeb.LanguagePlug
   end
 
   scope "/", DynamicRouterWeb do
@@ -28,8 +32,8 @@ defmodule DynamicRouterWeb.Router do
   end
 
   scope "/:locale", DynamicRouterWeb do
-    pipe_through :browser
-    
+    pipe_through [:browser, :language]
+
     get "/", PageController, :index
 
     get "/*path", DynamicController, :handle

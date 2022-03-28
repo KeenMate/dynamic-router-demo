@@ -74,7 +74,7 @@ $$;
 create table const.language
 (
     language_id int generated always as identity primary key not null,
-    code        text check (length(code) = 5) unique         not null,
+    code        text unique                                  not null,
     name        text                                         not null
 );
 
@@ -92,16 +92,16 @@ create table const.language_variant
 create table const.controller
 (
     controller_id int generated always as identity primary key not null,
-    code          text unique not null,
-    name text not null
+    code          text unique                                  not null,
+    name          text                                         not null
 );
 
 create table const.route_map
 (
-    lv_id           int generated always as identity primary key not null,
-    language_id     int references const.language (language_id) on delete cascade on update cascade,
-    route_path      text not null,
-    controller_id   int references const.controller (controller_id) on delete cascade on update cascade
+    lv_id         int generated always as identity primary key not null,
+    language_id   int references const.language (language_id) on delete cascade on update cascade,
+    route_path    text                                         not null,
+    controller_id int references const.controller (controller_id) on delete cascade on update cascade
 );
 
 create table const.article_state
@@ -243,7 +243,7 @@ create table article
     category_id       int,
     article_type_code text, -- Static/Dynamic
     gallery_id        int,
-    article_code      text -- ?
+    article_code      text  -- ?
 ) inherits (_template_timestamps);
 
 create table article_content
@@ -327,7 +327,7 @@ create table file
  *                                                                                   
  */
 
- create or replace function const.get_language_variants()
+create or replace function const.get_language_variants()
     returns table
             (
                 __lv_id           int,
@@ -359,7 +359,9 @@ create function get_language(_language_code text)
     language sql
 as
 $$
-    select * from const.language where code = _language_code;
+select *
+from const.language
+where code = _language_code;
 $$;
 
 /***
@@ -431,170 +433,175 @@ create trigger u_category_content_slug
 execute procedure trg_generate_slug_from_title();
 
 create or replace function create_category(_created_by text,
-                                          _language_id int, _title text, _content text, _keywords text, _description text)
+                                           _language_id int, _title text, _content text, _keywords text,
+                                           _description text)
     returns table
             (
-                __created           timestamptz,
-                __created_by        text,
-                __modified          timestamptz,
-                __modified_by       text,
-                __category_id       int,
-                __language_id       int,
-                __title             text,
-                __slug              text,
-                __content           text,
-                __keywords          text,
-                __description       text
+                __created     timestamptz,
+                __created_by  text,
+                __modified    timestamptz,
+                __modified_by text,
+                __category_id int,
+                __language_id int,
+                __title       text,
+                __slug        text,
+                __content     text,
+                __keywords    text,
+                __description text
             )
     language plpgsql
 as
 $$
 declare
     __category_id int;
-    __cc_id int;
+    __cc_id       int;
 begin
     insert into category (created_by, modified_by)
     values (_created_by, _created_by)
     returning category_id into __category_id;
 
-    insert into category_content(created_by, modified_by, language_id, category_id, title, content, keywords, description)
+    insert into category_content(created_by, modified_by, language_id, category_id, title, content, keywords,
+                                 description)
     values (_created_by, _created_by, _language_id, __category_id, _title, _content, _keywords, _description)
     returning cc_id into __cc_id;
 
     return query
-    select  cc.created
-           ,cc.created_by
-           ,cc.modified
-           ,cc.modified_by
-           ,c.category_id
-           ,cc.language_id
-           ,cc.title
-           ,cc.slug
-           ,cc.content
-           ,cc.keywords
-           ,cc.description
-    from category c
-    inner join category_content cc on c.category_id = cc.category_id
-    where c.category_id = __category_id;
+        select cc.created
+             , cc.created_by
+             , cc.modified
+             , cc.modified_by
+             , c.category_id
+             , cc.language_id
+             , cc.title
+             , cc.slug
+             , cc.content
+             , cc.keywords
+             , cc.description
+        from category c
+                 inner join category_content cc on c.category_id = cc.category_id
+        where c.category_id = __category_id;
 end;
 $$;
 
-create or replace function update_category(_category_id int, _created_by text, 
-                                          _cc_id int, _language_id int, _title text, _content text, _keywords text, _description text)
+create or replace function update_category(_category_id int, _created_by text,
+                                           _cc_id int, _language_id int, _title text, _content text, _keywords text,
+                                           _description text)
     returns table
             (
-                __created           timestamptz,
-                __created_by        text,
-                __modified          timestamptz,
-                __modified_by       text,
-                __category_id       int,
-                __language_id       int,
-                __title             text,
-                __slug              text,
-                __content           text,
-                __keywords          text,
-                __description       text
+                __created     timestamptz,
+                __created_by  text,
+                __modified    timestamptz,
+                __modified_by text,
+                __category_id int,
+                __language_id int,
+                __title       text,
+                __slug        text,
+                __content     text,
+                __keywords    text,
+                __description text
             )
     language plpgsql
 as
 $$
 begin
-    update category 
-    set  created_by = _created_by
-        ,modified_by = _created_by
+    update category
+    set created_by  = _created_by
+      , modified_by = _created_by
     where category_id = _category_id;
 
     if exists(select 1 from category_content where cc_id = _cc_id)
-        then
-            update category_content
-            set  created_by = _created_by
-                ,modified_by = _created_by
-                ,language_id = _language_id
-                ,title = _title
-                ,content = _content
-                ,keywords = _keywords
-                ,description = _description
-            where cc_id = _cc_id;
-        else
-            insert into category_content(created_by, modified_by, category_id, language_id, title, content, keywords, description)
-            values (_created_by, _created_by, _category_id, _language_id, _title, _content, _keywords, _description);   
+    then
+        update category_content
+        set created_by  = _created_by
+          , modified_by = _created_by
+          , language_id = _language_id
+          , title       = _title
+          , content     = _content
+          , keywords    = _keywords
+          , description = _description
+        where cc_id = _cc_id;
+    else
+        insert into category_content(created_by, modified_by, category_id, language_id, title, content, keywords,
+                                     description)
+        values (_created_by, _created_by, _category_id, _language_id, _title, _content, _keywords, _description);
     end if;
-  
+
     return query
-    select  cc.created
-           ,cc.created_by
-           ,cc.modified
-           ,cc.modified_by
-           ,c.category_id
-           ,cc.language_id
-           ,cc.title
-           ,cc.slug
-           ,cc.content
-           ,cc.keywords
-           ,cc.description
-    from category c
-    inner join category_content cc on c.category_id = cc.category_id
-    where c.category_id = _category_id and cc.language_id = _language_id;
+        select cc.created
+             , cc.created_by
+             , cc.modified
+             , cc.modified_by
+             , c.category_id
+             , cc.language_id
+             , cc.title
+             , cc.slug
+             , cc.content
+             , cc.keywords
+             , cc.description
+        from category c
+                 inner join category_content cc on c.category_id = cc.category_id
+        where c.category_id = _category_id
+          and cc.language_id = _language_id;
 end;
 $$;
 
 create or replace function get_all_categories()
     returns table
             (
-                __created           timestamptz,
-                __created_by        text,
-                __modified          timestamptz,
-                __modified_by       text,
-                __category_id       int,
-                __category_content   jsonb
+                __created          timestamptz,
+                __created_by       text,
+                __modified         timestamptz,
+                __modified_by      text,
+                __category_id      int,
+                __category_content jsonb
             )
     language sql
 as
 $$
-select  c.created
-       ,c.created_by
-       ,c.modified
-       ,c.modified_by
-       ,c.category_id
-       ,(
-            select json_object_agg(d.language_id, row_to_json(d))
-            from (
-                        select l.language_id, l.code, cc.title
-                        from language l
-                        left join category_content cc on l.language_id = cc.language_id
-                        where cc.category_id = c.category_id
-                    ) d
-        ) as category_content
-    from category c
+select c.created
+     , c.created_by
+     , c.modified
+     , c.modified_by
+     , c.category_id
+     , (
+    select json_object_agg(d.language_id, row_to_json(d))
+    from (
+             select l.language_id, l.code, cc.title
+             from language l
+                      left join category_content cc on l.language_id = cc.language_id
+             where cc.category_id = c.category_id
+         ) d
+) as category_content
+from category c
 $$;
 
 create or replace function get_category(_category_id int)
     returns table
             (
-                __created           timestamptz,
-                __created_by        text,
-                __modified          timestamptz,
-                __modified_by       text,
-                __category_id       int,
-                __category_content   jsonb
+                __created          timestamptz,
+                __created_by       text,
+                __modified         timestamptz,
+                __modified_by      text,
+                __category_id      int,
+                __category_content jsonb
 
             )
     language sql
 as
 $$
-select  c.created
-       ,c.created_by
-       ,c.modified
-       ,c.modified_by
-       ,c.category_id
-       ,(
-           select json_object_agg(d.language_id, row_to_json(d))
-           from (
-                    select *
-                    from category_content cc
-                    where cc.category_id = c.category_id
-                ) d
-       ) as category_content
+select c.created
+     , c.created_by
+     , c.modified
+     , c.modified_by
+     , c.category_id
+     , (
+    select json_object_agg(d.language_id, row_to_json(d))
+    from (
+             select *
+             from category_content cc
+             where cc.category_id = c.category_id
+         ) d
+) as category_content
 from category c
 where c.category_id = _category_id
 limit 1
@@ -634,7 +641,7 @@ create trigger u_article_content_slug
     for each row
 execute procedure trg_generate_slug_from_title();
 
-create or replace function create_article(_created_by text, _user_id int, _category_id int, _type_code text, 
+create or replace function create_article(_created_by text, _user_id int, _category_id int, _type_code text,
                                           _language_id int, _title text, _content text)
     returns table
             (
@@ -660,7 +667,7 @@ as
 $$
 declare
     __article_id int;
-    __ac_id int;
+    __ac_id      int;
 begin
     insert into article (created_by, modified_by, category_id, article_type_code)
     values (_created_by, _created_by, _category_id, _type_code)
@@ -671,29 +678,30 @@ begin
     returning ac_id into __ac_id;
 
     return query
-    select  ac.created
-           ,ac.created_by
-           ,ac.modified
-           ,ac.modified_by
-           ,a.category_id
-           ,a.article_type_code
-           ,a.gallery_id
-           ,a.article_code
-           ,ac.language_id
-           ,ac.article_id
-           ,ac.title
-           ,ac.slug
-           ,ac.content
-           ,ac.keywords
-           ,ac.description
-           ,ac.state_code
-    from article a
-    inner join article_content ac on a.article_id = ac.article_id
-    where a.article_id = __article_id;
+        select ac.created
+             , ac.created_by
+             , ac.modified
+             , ac.modified_by
+             , a.category_id
+             , a.article_type_code
+             , a.gallery_id
+             , a.article_code
+             , ac.language_id
+             , ac.article_id
+             , ac.title
+             , ac.slug
+             , ac.content
+             , ac.keywords
+             , ac.description
+             , ac.state_code
+        from article a
+                 inner join article_content ac on a.article_id = ac.article_id
+        where a.article_id = __article_id;
 end;
 $$;
 
-create or replace function update_article(_article_id int, _created_by text, _user_id int, _category_id int, _type_code text, 
+create or replace function update_article(_article_id int, _created_by text, _user_id int, _category_id int,
+                                          _type_code text,
                                           _ac_id int, _language_id int, _title text, _content text)
     returns table
             (
@@ -718,47 +726,48 @@ create or replace function update_article(_article_id int, _created_by text, _us
 as
 $$
 begin
-    update article 
-    set  created_by = _created_by
-        ,modified_by = _created_by
-        ,category_id = _category_id
+    update article
+    set created_by  = _created_by
+      , modified_by = _created_by
+      , category_id = _category_id
     where article_id = _article_id;
 
 
-  if exists(select 1 from article_content where ac_id = _ac_id)
+    if exists(select 1 from article_content where ac_id = _ac_id)
     then
         update article_content
-        set  created_by = _created_by
-            ,modified_by = _created_by
-            ,language_id = _language_id
-            ,title = _title
-            ,content = _content
+        set created_by  = _created_by
+          , modified_by = _created_by
+          , language_id = _language_id
+          , title       = _title
+          , content     = _content
         where ac_id = _ac_id;
     else
         insert into article_content(created_by, modified_by, language_id, article_id, title, content)
-        values (_created_by, _created_by, _language_id, _article_id, _title, _content);   
+        values (_created_by, _created_by, _language_id, _article_id, _title, _content);
     end if;
-  
+
     return query
-    select  ac.created
-           ,ac.created_by
-           ,ac.modified
-           ,ac.modified_by
-           ,a.category_id
-           ,a.article_type_code
-           ,a.gallery_id
-           ,a.article_code
-           ,ac.language_id
-           ,ac.article_id
-           ,ac.title
-           ,ac.slug
-           ,ac.content
-           ,ac.keywords
-           ,ac.description
-           ,ac.state_code
-    from article a
-    inner join article_content ac on a.article_id = ac.article_id
-    where a.article_id = _article_id and ac.language_id = _language_id;
+        select ac.created
+             , ac.created_by
+             , ac.modified
+             , ac.modified_by
+             , a.category_id
+             , a.article_type_code
+             , a.gallery_id
+             , a.article_code
+             , ac.language_id
+             , ac.article_id
+             , ac.title
+             , ac.slug
+             , ac.content
+             , ac.keywords
+             , ac.description
+             , ac.state_code
+        from article a
+                 inner join article_content ac on a.article_id = ac.article_id
+        where a.article_id = _article_id
+          and ac.language_id = _language_id;
 end;
 $$;
 
@@ -780,25 +789,25 @@ create or replace function get_all_articles()
     language sql
 as
 $$
-select  a.created
-       ,a.created_by
-       ,a.modified
-       ,a.modified_by
-       ,a.article_id
-       ,a.category_id
-       ,a.article_type_code
-       ,a.gallery_id
-       ,a.article_code
-       ,(
-            select json_object_agg(d.language_id, row_to_json(d))
-            from (
-                        select l.language_id, l.code, ac.title
-                        from language l
-                        left join article_content ac on l.language_id = ac.language_id
-                        where ac.article_id = a.article_id
-                    ) d
-        ) as article_content
-    from article a
+select a.created
+     , a.created_by
+     , a.modified
+     , a.modified_by
+     , a.article_id
+     , a.category_id
+     , a.article_type_code
+     , a.gallery_id
+     , a.article_code
+     , (
+    select json_object_agg(d.language_id, row_to_json(d))
+    from (
+             select l.language_id, l.code, ac.title
+             from language l
+                      left join article_content ac on l.language_id = ac.language_id
+             where ac.article_id = a.article_id
+         ) d
+) as article_content
+from article a
 $$;
 
 create or replace function get_article(_article_id int)
@@ -819,23 +828,23 @@ create or replace function get_article(_article_id int)
     language sql
 as
 $$
-select  a.created
-       ,a.created_by
-       ,a.modified
-       ,a.modified_by
-       ,a.article_id
-       ,a.category_id
-       ,a.article_type_code
-       ,a.gallery_id
-       ,a.article_code
-       ,(
-           select json_object_agg(d.language_id, row_to_json(d))
-           from (
-                    select *
-                    from article_content ac
-                    where ac.article_id = a.article_id
-                ) d
-       ) as article_content
+select a.created
+     , a.created_by
+     , a.modified
+     , a.modified_by
+     , a.article_id
+     , a.category_id
+     , a.article_type_code
+     , a.gallery_id
+     , a.article_code
+     , (
+    select json_object_agg(d.language_id, row_to_json(d))
+    from (
+             select *
+             from article_content ac
+             where ac.article_id = a.article_id
+         ) d
+) as article_content
 from article a
 where a.article_id = _article_id
 limit 1
@@ -844,15 +853,15 @@ $$;
 create or replace function delete_article(_article_id int)
     returns table
             (
-                __created     timestamptz,
-                __created_by  text,
-                __modified    timestamptz,
-                __modified_by text,
-                __article_id  int,
-                __category_id  int,
-                __article_type_code  text,
-                __gallery_id  int,
-                __article_code  text
+                __created           timestamptz,
+                __created_by        text,
+                __modified          timestamptz,
+                __modified_by       text,
+                __article_id        int,
+                __category_id       int,
+                __article_type_code text,
+                __gallery_id        int,
+                __article_code      text
             )
     language plpgsql
 as
@@ -1173,16 +1182,14 @@ $$;
 -- ROUTING --
 -------------
 
-create function get_controller(_route text, _language_id int)
+create or replace function get_controller(_route text, _language_id int)
     returns setof const.controller
     language sql
 as
 $$
-select c.controller_id,
-       c.name,
-       c.code
+select c.*
 from const.controller c
-inner join const.route_map rm on rm.controller_id = c.controller_id
+         inner join const.route_map rm on rm.controller_id = c.controller_id
 where rm.route_path = _route
   and rm.language_id = _language_id
 limit 1;
@@ -1199,7 +1206,7 @@ $$;
  *                                                              
  */
 
- create or replace function public.add_gallery_photos(_gallery_id integer, _photo_ids integer[])
+create or replace function public.add_gallery_photos(_gallery_id integer, _photo_ids integer[])
     RETURNS SETOF public.gallery_photo
     LANGUAGE sql
 AS
@@ -1379,7 +1386,7 @@ $$;
  *                                       
  */
 
- create or replace function create_file(_user_id int
+create or replace function create_file(_user_id int
 , _created_by text
 , _comm_id int
 , _filename text
@@ -1443,25 +1450,25 @@ declare
     __last_id int;
 begin
 
-    insert into const.language(code, name) values ('cs-cz', 'Čeština');
-    insert into const.language(code, name) values ('en-gb', 'English');
-    insert into const.language(code, name) values ('de-de', 'German');
-    insert into const.language(code, name) values ('fr-fr', 'French');
+    insert into const.language(code, name) values ('cs', 'Čeština');
+    insert into const.language(code, name) values ('en', 'English');
+    insert into const.language(code, name) values ('de', 'German');
+    insert into const.language(code, name) values ('fr', 'French');
 
     insert into const.language_variant(language_id, is_root, domain, domain_redirect, route_code, is_default)
-    values (1, true, 'localhost', null, 'cs-cz', true);
+    values (1, true, 'localhost', null, 'cs', true);
     insert into const.language_variant(language_id, is_root, domain, domain_redirect, route_code, is_default)
-    values (2, false, 'localhost.en', null, 'en-gb', true);
+    values (2, false, 'localhost.en', null, 'en', true);
     insert into const.language_variant(language_id, is_root, domain, domain_redirect, route_code, is_default)
-    values (4, false, 'localhost.en', null, 'fr-fr', false);
+    values (4, false, 'localhost.en', null, 'fr', false);
     insert into const.language_variant(language_id, is_root, domain, domain_redirect, route_code, is_default)
-    values (3, false, 'localhost.en', null, 'de-de', false);
+    values (3, false, 'localhost.en', null, 'de', false);
     insert into const.language_variant(language_id, is_root, domain, domain_redirect, route_code, is_default)
-    values (4, false, 'localhost.fr', 'localhost.en', 'fr-fr', false);
+    values (4, false, 'localhost.fr', 'localhost.en', 'fr', false);
     insert into const.language_variant(language_id, is_root, domain, domain_redirect, route_code, is_default)
-    values (3, false, 'localhost.de', 'localhost.en', 'de-de', false);
+    values (3, false, 'localhost.de', 'localhost.en', 'de', false);
     insert into const.language_variant(language_id, is_root, domain, domain_redirect, route_code, is_default)
-    values (1, false, 'localhost.cz', 'localhost', 'cs-cz', false);
+    values (1, false, 'localhost.cz', 'localhost', 'cs', false);
 
     insert into const.nav_state(code, title) values ('HIDDEN', 'Hidden');
     insert into const.nav_state(code, title) values ('VISIBLE', 'Visible');
@@ -1494,6 +1501,19 @@ begin
     return query select 1;
 end;
 $$;
+
+/***
+ *    ██████╗ ██████╗     ██████╗ ███████╗██████╗ ███╗   ███╗██╗███████╗███████╗██╗ ██████╗ ███╗   ██╗███████╗
+ *    ██╔══██╗██╔══██╗    ██╔══██╗██╔════╝██╔══██╗████╗ ████║██║██╔════╝██╔════╝██║██╔═══██╗████╗  ██║██╔════╝
+ *    ██║  ██║██████╔╝    ██████╔╝█████╗  ██████╔╝██╔████╔██║██║███████╗███████╗██║██║   ██║██╔██╗ ██║███████╗
+ *    ██║  ██║██╔══██╗    ██╔═══╝ ██╔══╝  ██╔══██╗██║╚██╔╝██║██║╚════██║╚════██║██║██║   ██║██║╚██╗██║╚════██║
+ *    ██████╔╝██████╔╝    ██║     ███████╗██║  ██║██║ ╚═╝ ██║██║███████║███████║██║╚██████╔╝██║ ╚████║███████║
+ *    ╚═════╝ ╚═════╝     ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝╚══════╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
+ *
+ */
+-- REASSIGN OWNED BY current_user TO dhl_start;
+
+grant usage on schema ext, internal, helpers, const to dynamic_router_dev;
 
 select *
 from load_initial_data();
