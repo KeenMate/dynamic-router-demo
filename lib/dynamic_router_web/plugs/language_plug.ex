@@ -12,7 +12,7 @@ defmodule DynamicRouterWeb.LanguagePlug do
     {:ok, language_id} = get_language_id(code)
 
     conn
-    |> put_private("pluto__language_id", language_id)
+    |> put_private(:pluto__language_id, language_id)
   end
 
   defp get_language_id(code) do
