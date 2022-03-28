@@ -1486,10 +1486,10 @@ begin
     insert into const.controller(code, name) values ('news', 'News Controller');
     insert into const.controller(code, name) values ('static', 'Static Controller');
 
-    insert into const.route_map(language_id, route_path, controller_id) values (1, 'clanky', 3);
+    insert into const.route_map(language_id, route_path, controller_id) values (1, 'clanky', 1);
     insert into const.route_map(language_id, route_path, controller_id) values (1, 'stazeni', 2);
     insert into const.route_map(language_id, route_path, controller_id) values (1, 'novinky', 3);
-    insert into const.route_map(language_id, route_path, controller_id) values (2, 'articles', 3);
+    insert into const.route_map(language_id, route_path, controller_id) values (2, 'articles', 1);
     insert into const.route_map(language_id, route_path, controller_id) values (2, 'downloads', 2);
     insert into const.route_map(language_id, route_path, controller_id) values (2, 'news', 3);
 
