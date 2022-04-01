@@ -8,18 +8,18 @@ defmodule DynamicRouterWeb.NewsController do
   def handle(conn, %{"path" => [_ | path]}) do
     language_id = conn.private.pluto__language_id
 
-    %{article_id: article_id, category_depth: category_depth} = get_article_id(path)
+    %{article_id: article_id, category_depth: category_depth} = get_article_id(path) |> IO.inspect(label: "Article info")
     category = Enum.take(path, category_depth)
 
     conn
-    |> send_resp(200, "Language ID: #{language_id}, Article ID: #{article_id || "None"}, Category: #{category}")
+    |> send_resp(200, "Language ID: #{language_id}, Article ID: #{article_id || "None"}, Category: #{Enum.join(category, "/")}")
   end
 
   defp get_article_id([]), do: %{article_id: nil, category_depth: 0}
 
   defp get_article_id([path | []]) do
     case get_number(path) do
-      nil -> %{article_id: nil, category_depth: 0}
+      nil -> %{article_id: nil, category_depth: 1}
       id -> %{article_id: id, category_depth: 0}
     end
   end
