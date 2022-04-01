@@ -1,7 +1,7 @@
 defmodule DynamicRouterWeb.DynamicController do
   use DynamicRouterWeb, :controller
 
-  import DynamicRouterWeb.ControllerMapping
+  require Logger
 
   alias DynamicRouter.Database.DbContext
   alias DynamicRouter.Database.Models.GetControllerItem
@@ -10,18 +10,11 @@ defmodule DynamicRouterWeb.DynamicController do
     language_id = conn.private[:pluto__language_id] |> IO.inspect(label: "Language ID")
 
     with {:ok, controller_code} <- get_controller_code(List.first(path), language_id) |> IO.inspect(label: "Controller code"),
-         {:ok, controller} <- get_controller_module(controller_code) |> IO.inspect(label: "Controller module") do
+         {:ok, controller} <- get_module_from_string(controller_code) |> IO.inspect(label: "Controller module") do
       apply(controller, :handle, [conn, params])
     else
       {:error, :no_match} -> send_resp(conn, 404, "No route found")
       err -> err
-    end
-  end
-
-  def get_controller_module(controller_code) do
-    case Map.get(controller_mapping(), controller_code) do
-      nil -> {:error, :no_match}
-      controller -> {:ok, controller}
     end
   end
 
@@ -30,6 +23,20 @@ defmodule DynamicRouterWeb.DynamicController do
       {:ok, [%GetControllerItem{code: controller_code} | _]} -> {:ok, controller_code}
       {:ok, []} -> {:error, :no_match}
       err -> err
+    end
+  end
+
+  @spec get_module_from_string(binary()) :: {:ok, module()} | {:error, any()}
+  def get_module_from_string(module_string) do
+    try do
+      module = String.to_existing_atom("Elixir." <> module_string)
+
+      {:ok, module}
+    rescue
+
+      ArgumentError ->
+        Logger.error("Module #{module_string} not found")
+        {:error, :no_match}
     end
   end
 end
