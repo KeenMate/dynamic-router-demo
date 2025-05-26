@@ -5,50 +5,35 @@ defmodule DynamicRouterWeb.NewsController do
     send_resp(conn, 200, "News list")
   end
 
-  def handle(conn, %{"locale" => locale, "path" => [_ | path]} = params) do
-    category_path = Enum.join(path, "/") |> IO.inspect(label: "Category")
+  def handle(conn, %{"path" => [_ | path]}) do
+    language_id = conn.private.pluto__language_id
 
-    case {is_category(locale, category_path), is_article(locale, path)} do
-      {category_id, _} when category_id != nil -> category(conn, params, category_path)
-      {_, article_id} when article_id != nil -> article(conn, params, category_path)
-      _ -> send_resp(conn, 404, "No route found")
+    %{article_id: article_id, category_depth: category_depth} = get_article_id(path) |> IO.inspect(label: "Article info")
+    category = Enum.take(path, category_depth)
+
+    conn
+    |> send_resp(200, "Language ID: #{language_id}, Article ID: #{article_id || "None"}, Category: #{Enum.join(category, "/")}")
+  end
+
+  defp get_article_id([]), do: %{article_id: nil, category_depth: 0}
+
+  defp get_article_id([path | []]) do
+    case get_number(path) do
+      nil -> %{article_id: nil, category_depth: 1}
+      id -> %{article_id: id, category_depth: 0}
     end
   end
 
-  def category(conn, params, category) do
-    send_resp(conn, 200, "Category: #{category}")
-  end
+  defp get_article_id(path) do
+    reversed = Enum.reverse(path)
 
-  def article(conn, params, article) do
-    send_resp(conn, 200, "Article: #{article}")
-  end
+    first = List.first(reversed)
+    second = reversed |> Enum.drop(1) |> List.first()
 
-  def is_category("en", "cars"), do: true
-  def is_category("en", "cars/audi"), do: true
-  def is_category("cs", "auta"), do: true
-  def is_category("cs", "auta/audi"), do: true
-  def is_category(_, _), do: nil
-
-  def is_article(locale, path) do
-    id_one = get_article_id(locale, path, -2)
-    id_two = get_article_id(locale, path, -1)
-
-    case {id_one, id_two} do
-      {id_one, _} when id_one != nil -> id_one
-      {_, id_two} when id_two != nil -> id_two
-      _ -> nil
-    end
-  end
-
-  def get_article_id(locale, path, index) do
-    {category, [article_id_str | _]} = Enum.split(path, index)
-
-    category_id = is_category(locale, Enum.join(category, "/"))
-    article_id = get_number(article_id_str)
-
-    case {category_id, article_id} do
-      {c_id, a_id} when c_id != nil and a_id != nil -> a_id
-      _ -> nil
+    case {get_number(first), get_number(second)} do
+      {nil, nil} -> %{article_id: nil, category_depth: length(path)}
+      {id, _} when not is_nil(id) -> %{article_id: id, category_depth: length(path) - 1}
+      {_, id} -> %{article_id: id, category_depth: length(path) - 2}
     end
   end
 

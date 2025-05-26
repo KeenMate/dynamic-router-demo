@@ -1481,10 +1481,10 @@ begin
     insert into const.article_state(code, title) values ('DRAFT', 'Draft');
     insert into const.article_state(code, title) values ('PUBLISHED', 'Published');
 
-    insert into const.controller(code, name) values ('article', 'Article Controller');
-    insert into const.controller(code, name) values ('download', 'Download Controller');
-    insert into const.controller(code, name) values ('news', 'News Controller');
-    insert into const.controller(code, name) values ('static', 'Static Controller');
+    insert into const.controller(code, name) values ('DynamicRouterWeb.ArticleController', 'Article Controller');
+    insert into const.controller(code, name) values ('DynamicRouterWeb.DownloadController', 'Download Controller');
+    insert into const.controller(code, name) values ('DynamicRouterWeb.NewsController', 'News Controller');
+    insert into const.controller(code, name) values ('DynamicRouterWeb.StaticController', 'Static Controller');
 
     insert into const.route_map(language_id, route_path, controller_id) values (1, 'clanky', 1);
     insert into const.route_map(language_id, route_path, controller_id) values (1, 'stazeni', 2);
