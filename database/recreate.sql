@@ -1,4 +1,4 @@
---create role dynamic_router_dev with password 'Dynamic' login;
+-- create role dynamic_router_dev with password 'Dynamic' login;
 
 SELECT pg_terminate_backend(pg_stat_activity.pid)
 FROM pg_stat_activity

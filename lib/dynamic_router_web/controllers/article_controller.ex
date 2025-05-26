@@ -3,6 +3,6 @@ defmodule DynamicRouterWeb.ArticleController do
 
   def handle(conn, _params) do
     conn
-    |> send_resp(200, "Article controller")
+    |> send_resp(200, "Article controller #{conn.private.pluto__language_id}")
   end
 end
